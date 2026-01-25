@@ -6,9 +6,12 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from django.views.decorators.csrf import csrf_exempt
 from django.utils.decorators import method_decorator
 
-
 from .models import Dataset
 from .services import analyze_csv
+
+from .pdfs import generate_report
+from io import BytesIO
+from django.http import HttpResponse
 
 class UploadDatasetView(APIView):
     parser_classes=(MultiPartParser,FormParser)
@@ -27,7 +30,7 @@ class UploadDatasetView(APIView):
 
         try:
             summary = analyze_csv(dataset.file.path)
-            
+
             dataset.summary=summary
             dataset.save()
         except Exception as e:
@@ -64,3 +67,25 @@ class DatasetHistoryView(APIView):
             for d in datasets
         ]
         return Response(data)
+    
+class DatasetReportView(APIView):
+    def get(self,request, dataset_id):
+        try:
+            dataset=Dataset.objects.get(id=dataset_id)
+        except Dataset.DoesNotExist:
+            return Response(
+                {"error":"Dataset not found"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        
+        buffer=BytesIO()
+        generate_report(buffer,dataset)
+        buffer.seek(0)
+
+        response=HttpResponse(buffer,content_type="application/pdf")
+        response["Content-Disposition"]=(
+            f'attachment; filename="dataset_{dataset_id}_report.pdf'
+        )
+
+        return response
+
