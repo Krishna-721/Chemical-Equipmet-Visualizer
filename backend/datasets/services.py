@@ -1,4 +1,5 @@
 import pandas as pd
+import hashlib
 
 REQUIRED_COLUMNS=[
     "Equipment Name",
@@ -36,3 +37,11 @@ def analyze_csv(file_path):
     }
 
     return summary
+
+def compute_file_checksum(file_path):
+    sha256=hashlib.sha256()
+    with open (file_path,"rb") as f:
+        for chunk in iter(lambda: f.read(8192),b""):
+            sha256.update(chunk)
+        return sha256.hexdigest()
+    

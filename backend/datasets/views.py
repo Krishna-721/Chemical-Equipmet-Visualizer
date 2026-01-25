@@ -13,6 +13,8 @@ from .pdfs import generate_report
 from io import BytesIO
 from django.http import HttpResponse
 
+from .services import analyze_csv, compute_file_checksum
+
 class UploadDatasetView(APIView):
     parser_classes=(MultiPartParser,FormParser)
     def post(self, request):
@@ -30,8 +32,8 @@ class UploadDatasetView(APIView):
 
         try:
             summary = analyze_csv(dataset.file.path)
-
             dataset.summary=summary
+            dataset.checksum=compute_file_checksum(dataset.file.path)
             dataset.save()
         except Exception as e:
             dataset.delete()
@@ -69,23 +71,60 @@ class DatasetHistoryView(APIView):
         return Response(data)
     
 class DatasetReportView(APIView):
-    def get(self,request, dataset_id):
+    def get(self, request, dataset_id):
         try:
-            dataset=Dataset.objects.get(id=dataset_id)
+            dataset = Dataset.objects.get(id=dataset_id)
         except Dataset.DoesNotExist:
             return Response(
-                {"error":"Dataset not found"},
+                {"error": "Dataset not found"},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
-        buffer=BytesIO()
-        generate_report(buffer,dataset)
+
+        if not dataset.summary:
+            return Response(
+                {
+                    "error": {
+                        "code": "NO_SUMMARY",
+                        "message": "Report cannot be generated for datasets with no valid analysis"
+                    }
+                },
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        buffer = BytesIO()
+
+        try:
+            generate_report(buffer, dataset)
+        except Exception as e:
+            return Response(
+                {
+                    "error": {
+                        "code": "PDF_GENERATION_FAILED",
+                        "message": str(e)
+                    }
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+        if buffer.tell() == 0:
+            return Response(
+                {
+                    "error": {
+                        "code": "EMPTY_PDF",
+                        "message": "Generated PDF is empty"
+                    }
+                },
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
         buffer.seek(0)
 
-        response=HttpResponse(buffer,content_type="application/pdf")
-        response["Content-Disposition"]=(
-            f'attachment; filename="dataset_{dataset_id}_report.pdf'
+        response = HttpResponse(
+            buffer.getvalue(),
+            content_type="application/pdf"
+        )
+        response["Content-Disposition"] = (
+            f'attachment; filename="dataset_{dataset_id}_report.pdf"'
         )
 
         return response
-
