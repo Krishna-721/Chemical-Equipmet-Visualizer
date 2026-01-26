@@ -42,6 +42,8 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE = [
+    "corsheaders.middleware.CorsMiddleware",
+    "django.middleware.security.SecurityMiddleware",
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -55,6 +57,17 @@ MEDIA_URL='/media/'
 MEDIA_ROOT=BASE_DIR/'media'
 
 ROOT_URLCONF = 'config.urls'
+
+REST_FRAMEWORK={
+    "DEFAULT_AUTHENTICATION_CLASSES":[
+        "rest_framework.authentication.BasicAuthentication"
+    ],
+    "DEFAULT_PERMISSION_CLASSES":[
+        "rest_framework.permissions.IsAuthenticated"
+    ]
+}
+
+CORS_ALLOW_ALL_ORIGINS=True
 
 TEMPLATES = [
     {

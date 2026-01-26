@@ -14,9 +14,14 @@ from io import BytesIO
 from django.http import HttpResponse
 
 from .services import analyze_csv, compute_file_checksum
+from rest_framework.permissions import IsAuthenticated
+from rest_framework.authentication import BasicAuthentication
 
 class UploadDatasetView(APIView):
     parser_classes=(MultiPartParser,FormParser)
+    permission_classes=[IsAuthenticated]
+    parser_classes=(MultiPartParser, FormParser)
+    authentication_classes=[BasicAuthentication]
     def post(self, request):
         file = request.FILES.get("file")
         if not file:
@@ -57,6 +62,9 @@ class UploadDatasetView(APIView):
 
 
 class DatasetHistoryView(APIView):
+    permission_classes=[IsAuthenticated]
+    auth_class=[BasicAuthentication]
+
     def get(self, request):
         datasets = Dataset.objects.order_by("-uploaded_at")[:5]
         data = [
@@ -71,6 +79,9 @@ class DatasetHistoryView(APIView):
         return Response(data)
     
 class DatasetReportView(APIView):
+    permission_classes=[IsAuthenticated]
+    auth_class=[BasicAuthentication]
+
     def get(self, request, dataset_id):
         try:
             dataset = Dataset.objects.get(id=dataset_id)
@@ -128,3 +139,4 @@ class DatasetReportView(APIView):
         )
 
         return response
+

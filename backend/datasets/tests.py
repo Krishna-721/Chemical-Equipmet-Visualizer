@@ -89,3 +89,7 @@ class TestDatasetUpload(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Missing columns", response.data["error"])
         self.assertEqual(Dataset.objects.count(), 0)
+    
+    def test_history_requires_auth(self):
+        response=self.client.get("/api/history")
+        self.assertEqual(response.status_code,403)

@@ -83,3 +83,7 @@ Thumbs.db
 /staticfiles/
 /static/
 media/
+
+test_data/
+
+.github/
