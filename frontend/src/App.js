@@ -9,28 +9,38 @@ import Logout from "./components/logout";
 import "./style.css";
 
 export default function App() {
-  const [loggedIn, setLoggedIn] = useState(isAuthenticated());
+  const [authenticated, setAuthenticated] = useState(isAuthenticated());
+  const [refreshKey, setRefreshKey]=useState(0)
 
   function handleLogin() {
-    setLoggedIn(true);   
+    setAuthenticated(true);   
   }
 
   function handleLogout() {
-    setLoggedIn(false);  
+    setAuthenticated(false);  
+  }
+  function handleUploadSuccess(){
+    setRefreshKey(prev=>prev+1)
   }
 
   return (
     <div className="container">
       <div className="header">
         <h2>Chemical Equipment Parameter Visualizer</h2>
-        {loggedIn && <Logout onLogout={handleLogout} />}
+        {authenticated && <Logout onLogout={handleLogout} />}
       </div>
 
-      {!loggedIn && <Login onLogin={handleLogin} />}
+      {!authenticated && <Login onLogin={handleLogin} />}
 
-      <Upload />
+      <Upload 
+      authenticated={authenticated}
+      onUploadSuccess={handleUploadSuccess}
+      />
 
-      <History />
+      <History authenticated={authenticated}
+      refreshKey={refreshKey}
+      />
+
     </div>
   );
 }
