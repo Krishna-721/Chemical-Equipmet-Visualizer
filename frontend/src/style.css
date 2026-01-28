@@ -49,3 +49,80 @@ button:disabled {
   color: #065f46;
   margin-top: 10px;
 }
+
+.chart-row {
+  display: flex;
+  gap: 40px;
+  align-items: flex-start;
+  margin-top: 20px;
+}
+
+.chart-box {
+  width: 400px;
+}
+
+.table-box {
+  min-width: 250px;
+}
+
+.summary-table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.summary-table th,
+.summary-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.summary-table th {
+  background-color: #f5f5f5;
+}
+
+.container {
+  max-width: 1000px;
+  margin: auto;
+  padding: 20px;
+  font-family: system-ui, sans-serif;
+}
+
+.card {
+  background: #fff;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+}
+
+.dataset-list {
+  list-style: none;
+  padding: 0;
+}
+
+.dataset-list li {
+  padding: 8px;
+  cursor: pointer;
+  border-radius: 6px;
+}
+
+.dataset-list li:hover {
+  background: #f3f4f6;
+}
+
+.dataset-list li.selected {
+  background: #e0e7ff;
+  font-weight: 600;
+}
+
+.viz-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.error {
+  color: #dc2626;
+  margin-top: 8px;
+}

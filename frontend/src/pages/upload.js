@@ -4,6 +4,7 @@ import api from "../api";
 export default function Upload({ authenticated, onUploadSuccess }) {
   const [file, setFile] = useState(null);
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   function handleUpload() {
     if (!authenticated) {
@@ -16,43 +17,49 @@ export default function Upload({ authenticated, onUploadSuccess }) {
       return;
     }
 
+    setLoading(true);
+    setError("");
+
     const formData = new FormData();
     formData.append("file", file);
 
     api.post("upload/", formData)
-      .then(() => {
-        setError("");
+      .then(res => {
         setFile(null);
-        onUploadSuccess && onUploadSuccess();
+        onUploadSuccess(res.data.summary);
       })
       .catch(err => {
-        if (err.response?.status === 403) {
-          setError("Authentication required");
-        } else {
-          setError(err.response?.data?.error || "Upload failed");
-        }
+        setError(
+          err.response?.data?.error || "Upload failed"
+        );
+      })
+      .finally(() => {
+        setLoading(false);
       });
   }
 
   return (
-    <div>
+    <div className="card">
       <h3>Upload Dataset</h3>
 
       <input
         type="file"
-        disabled={!authenticated}
+        disabled={!authenticated || loading}
         onChange={e => setFile(e.target.files[0])}
       />
 
-      <button disabled={!authenticated} onClick={handleUpload}>
-        Upload
+      <button
+        onClick={handleUpload}
+        disabled={!authenticated || loading}
+      >
+        {loading ? "Uploading..." : "Upload"}
       </button>
 
       {!authenticated && (
-        <p style={{ color: "red" }}>Login required</p>
+        <p className="error">Login required</p>
       )}
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

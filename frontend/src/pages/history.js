@@ -1,9 +1,14 @@
 import { useEffect, useState } from "react";
 import api from "../api";
 
-export default function History({ authenticated, refreshKey }) {
+export default function History({
+  authenticated,
+  refreshKey,
+  onSelect,
+  selectedId
+}) {
   const [datasets, setDatasets] = useState([]);
-  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
   useEffect(() => {
     if (!authenticated) {
@@ -11,45 +16,12 @@ export default function History({ authenticated, refreshKey }) {
       return;
     }
 
+    setLoading(true);
+
     api.get("history/")
-      .then(res => {
-        setDatasets(res.data);
-        setError("");
-      })
-      .catch(() => {
-        setDatasets([]);
-        setError("Failed to load history");
-      });
+      .then(res => setDatasets(res.data))
+      .finally(() => setLoading(false));
   }, [authenticated, refreshKey]);
-
-  function downloadPDF(id) {
-    if (!authenticated) {
-      alert("Login required to download reports");
-      return;
-    }
-
-    api.get(`report/${id}/`, { responseType: "blob" })
-      .then(res => {
-        const blob = new Blob([res.data], { type: "application/pdf" });
-        const url = window.URL.createObjectURL(blob);
-
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = `dataset_${id}_report.pdf`;
-        document.body.appendChild(link);
-        link.click();
-        link.remove();
-
-        window.URL.revokeObjectURL(url);
-      })
-      .catch(err => {
-        if (err.response?.status === 403) {
-          alert("Authentication required");
-        } else {
-          alert("Failed to download PDF");
-        }
-      });
-  }
 
   if (!authenticated) {
     return <p>Please login to view history</p>;
@@ -59,19 +31,18 @@ export default function History({ authenticated, refreshKey }) {
     <div className="card">
       <h3>Last 5 Datasets</h3>
 
-      {error && <p style={{ color: "red" }}>{error}</p>}
+      {loading && <p>Loading history...</p>}
 
-      <ul>
+      <ul className="dataset-list">
         {datasets.map(d => (
-          <li key={d.id}>
+          <li
+            key={d.id}
+            onClick={() => onSelect(d)}
+            className={
+              d.id === selectedId ? "selected" : ""
+            }
+          >
             {d.filename}
-            <button
-              style={{ marginLeft: "10px" }}
-              onClick={() => downloadPDF(d.id)}
-              disabled={!authenticated}
-            >
-              Download PDF
-            </button>
           </li>
         ))}
       </ul>
