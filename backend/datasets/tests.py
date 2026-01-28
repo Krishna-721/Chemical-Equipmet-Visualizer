@@ -1,76 +1,87 @@
 from django.test import TestCase
 from rest_framework.test import APIClient
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.contrib.auth.models import User
 from .models import Dataset
+
 
 class TestDatasetUpload(TestCase):
     def setUp(self):
-        self.client=APIClient()
+        self.client = APIClient()
+        self.user = User.objects.create_user(
+            username="testuser",
+            password="testpass"
+        )
+        self.client.force_authenticate(user=self.user)
 
     def test_valid_csv_upload(self):
-        content=(
+        content = (
             "Equipment Name,Type,Flowrate,Pressure,Temperature\n"
-            "Pump A, Pump, 100,50,6\n"
-            "Valve B, Valve, 80, 3, 50\n"
+            "Pump A,Pump,100,50,6\n"
+            "Valve B,Valve,80,3,50\n"
         )
 
-        file=SimpleUploadedFile(
-            "valid_csv",
+        file = SimpleUploadedFile(
+            "valid.csv",
             content.encode("utf-8"),
             content_type="text/csv"
         )
-        response=self.client.post(
+
+        response = self.client.post(
             "/api/upload/",
             {"file": file},
             format="multipart"
         )
 
-        self.assertEqual(response.status_code,201)
-        self.assertIn("summary",response.data)
-        self.assertEqual(Dataset.objects.count(),1)
+        self.assertEqual(response.status_code, 201)
+        self.assertIn("summary", response.data)
+        self.assertEqual(Dataset.objects.count(), 1)
 
     def test_empty_csv_failure(self):
-        content=(
-            "Equipment Name,Type,Flowrate,Pressure,Temperature\n")
-        file=SimpleUploadedFile(
-            "invalid_csv",
+        content = "Equipment Name,Type,Flowrate,Pressure,Temperature\n"
+
+        file = SimpleUploadedFile(
+            "empty.csv",
             content.encode("utf-8"),
             content_type="text/csv"
         )
-        response=self.client.post(
+
+        response = self.client.post(
             "/api/upload/",
             {"file": file},
             format="multipart"
         )
 
-        self.assertEqual(response.status_code,400)
-        self.assertIn("error",response.data)
-        self.assertEqual(Dataset.objects.count(),0)
+        self.assertEqual(response.status_code, 400)
+        self.assertIn("error", response.data)
+        self.assertEqual(Dataset.objects.count(), 0)
 
     def test_last_five_datasets_are_present(self):
-        content=(
-        "Equipment Name,Type,Flowrate,Pressure,Temperature\n"
-        "Pump A, Pump, 500,40,9\n"
+        content = (
+            "Equipment Name,Type,Flowrate,Pressure,Temperature\n"
+            "Pump A,Pump,500,40,9\n"
         )
+
         for i in range(6):
-            file=SimpleUploadedFile(
+            file = SimpleUploadedFile(
                 f"file_{i}.csv",
                 content.encode("utf-8"),
                 content_type="text/csv"
             )
 
-            response=self.client.post(
+            response = self.client.post(
                 "/api/upload/",
-                {"file":file},
+                {"file": file},
                 format="multipart"
             )
 
-            self.assertEqual(response.status_code,201)
-        self.assertEqual(Dataset.objects.count(),5)
+            self.assertEqual(response.status_code, 201)
+
+        self.assertEqual(Dataset.objects.count(), 5)
 
     def test_missing_column_fails(self):
         content = (
-            "Equipment Name,Type,Flowrate,Pressure\n"  # Temperature missing
+            "Equipment Name,Type,Flowrate,Pressure\n"
             "Pump A,Pump,100,5\n"
         )
 
@@ -89,7 +100,8 @@ class TestDatasetUpload(TestCase):
         self.assertEqual(response.status_code, 400)
         self.assertIn("Missing columns", response.data["error"])
         self.assertEqual(Dataset.objects.count(), 0)
-    
+
     def test_history_requires_auth(self):
-        response=self.client.get("/api/history")
-        self.assertEqual(response.status_code,403)
+        self.client.force_authenticate(user=None)
+        response = self.client.get("/api/history/")
+        self.assertEqual(response.status_code, 401)
